@@ -37,7 +37,6 @@ def grouper(iterable, n):
     """Create chunks of size `n` from the iterable.
 
     Example:
-
     >>> grouper('ABCDEFG', 3)
     ['ABC', 'DEF', 'G']
     """

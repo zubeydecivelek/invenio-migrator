@@ -227,6 +227,7 @@ def loadfeatured(sources):
 def loadusers(sources):
     """Load users."""
     from .tasks.users import load_user
+
     # Cannot be executed asynchronously due to duplicate emails and usernames
     # which can create a racing condition.
     loadcommon(sources, load_user, asynchronous=False)

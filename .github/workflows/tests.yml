@@ -16,21 +16,76 @@ on:
         default: "Manual trigger"
 
 jobs:
-  Tests:
+  LegacyTests:
     runs-on: ubuntu-latest
 
     container:
-      image: python:2.7
+      image: python:2.7.18
+
+    services:
+      mysql:
+        image: mysql:5.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: invenio1
+          MYSQL_USER: invenio1
+          MYSQL_PASSWORD: dbpass123
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      LEGACY: maint-1.2
+      INVENIO_ADMIN_EMAIL: info@inveniosoftware.org
+      INVENIO_WEB_HOST: 127.0.0.1
+      INVENIO_WEB_USER: runner
+      INVENIO_WEB_SMTP_PORT: "0"
+      INVENIO_MYSQL_HOST: mysql
+      INVENIO_MYSQL_DBNAME: invenio1
+      INVENIO_MYSQL_DBUSER: invenio1
+      INVENIO_MYSQL_DBPASS: dbpass123
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Show Python version
+        run: python --version
+
       - name: Upgrade pip (Python 2.7 compatible)
         run: pip install "pip<21" "setuptools<45" "wheel"
 
-      - name: Install project with extras
-        run: pip install .[tests,docs,loader]
+      - name: Install project with all extras
+        run: pip install -e .[all]
 
-      - name: Run tests
+      - name: Provision and populate legacy Invenio instance
+        run: bash tests/legacy/scripts/invenio-legacy-kickstart.sh
+
+      - name: Run legacy tests
+        run: py.test tests/legacy/ -v
+
+  UnitTests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      - name: Upgrade pip
+        run: pip install --upgrade pip setuptools wheel
+
+      - name: Install celery (Python 3.8 compatible, for sphinx autodoc)
+        run: pip install "celery>=4.0,<6.0"
+
+      - name: Install project with extras
+        run: pip install .[tests,docs]
+
+      - name: Run unit tests
         run: bash run-tests.sh

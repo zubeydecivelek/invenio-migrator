@@ -30,7 +30,7 @@ jobs:
         run: pip install "pip<21" "setuptools<45" "wheel"
 
       - name: Install project with extras
-        run: pip install .[tests,docs]
+        run: pip install .[tests,docs,loader]
 
-      - name: Run test suite
+      - name: Run tests
         run: bash run-tests.sh
